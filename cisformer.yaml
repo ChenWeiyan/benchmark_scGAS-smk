@@ -1,0 +1,20 @@
+name: cisformer
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch>=2.0
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - anndata
+  - scanpy
+  - h5py
+  - pip
+  - pip:
+    - cisformer         # TODO: confirm package name / GitHub install instructions
+    - rpy2
+    - pyranges
+    - pybedtools

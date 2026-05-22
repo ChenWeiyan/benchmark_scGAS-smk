@@ -1,0 +1,19 @@
+name: linger
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch>=2.0
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - anndata
+  - scanpy
+  - pip
+  - pip:
+    - lingerpy          # TODO: confirm package name from https://github.com/SUwonglab/LINGER
+    - rpy2              # needed to read/write RDS files
+    - pyranges          # for genomic interval operations
+    - pybedtools        # fragment file processing

@@ -1,0 +1,33 @@
+name: r_benchmark
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.3
+  - r-seurat=5.0
+  - bioconductor-signac=1.12
+  - bioconductor-genomicranges
+  - bioconductor-genomeinfodb
+  - bioconductor-rtracklayer
+  - bioconductor-ensdb.hsapiens.v75
+  - bioconductor-ensdb.hsapiens.v86
+  - bioconductor-rsamtools
+  - bioconductor-scavenge
+  - bioconductor-matrixgenerics
+  - r-matrix
+  - r-data.table
+  - r-ggplot2
+  - r-patchwork
+  - r-ggridges
+  - r-glmnet
+  - r-glmnetutils
+  - r-igraph
+  - r-aricode
+  - r-devtools
+  - r-remotes
+  # ArchR (install manually if benchmarking archr):
+  # devtools::install_github("GreenleafLab/ArchR", ref="master", repos=BiocManager::repositories())
+  # Cicero (install manually if benchmarking cicero):
+  # devtools::install_github("cole-trapnell-lab/monocle3")
+  # BiocManager::install("cicero")
