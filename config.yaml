@@ -1,0 +1,103 @@
+# =============================================================================
+# Snakemake benchmark: scGAS vs. gene activity methods
+# Run from smk-benchmark/ directory:
+#   snakemake --use-conda --cores 8
+# =============================================================================
+
+# ── Input data ────────────────────────────────────────────────────────────────
+input:
+  fragment_file: "../data/atac_fragments.tsv.gz"   # bgzipped + tabix-indexed (.tbi must exist)
+  rna: "../data/filtered_feature_bc_matrix.h5"     # .h5 file  OR  path to MTX directory
+  genome: "hg38"                                    # genome of the input data
+
+# ── Methods to benchmark ──────────────────────────────────────────────────────
+# scGAS is always run. Toggle other methods by commenting/uncommenting.
+methods:
+  - scgas
+  - signac
+  # - archr
+  # - cicero
+  # - linger
+  # - cisformer
+  # - scarlink
+
+# ── scGAS reference ────────────────────────────────────────────────────────────
+scgas:
+  ref_dir: "../data/scgas_ref"                      # directory with hg19 reference files
+  ref_genome: "hg19"                                # scGAS reference genome
+  chain_file: "../data/hg38ToHg19.over.chain"       # UCSC liftOver chain (used when input genome != ref_genome)
+  gamma: 20
+  min_size: 10
+  max_size: 100
+  lsi_dims_start: 2
+  lsi_dims_end: 30
+  knn_k: 30
+  seed_fraction: 0.10
+  chunk_size: 500                # genes processed per batched matrix multiply (memory vs speed trade-off)
+
+# ── Signac GeneActivity ────────────────────────────────────────────────────────
+signac:
+  upstream: 2000
+  downstream: 0
+
+# ── ArchR GeneScoreMatrix ──────────────────────────────────────────────────────
+archr:
+  tile_size: 500
+  gene_model: "exp"
+  lsi_iterations: 2
+  lsi_varfeatures: 25000
+
+# ── Cicero co-accessibility gene activity ──────────────────────────────────────
+cicero:
+  window: 500000
+  max_elements: 200
+  distance_constraint: 250000
+
+# ── LINGER ─────────────────────────────────────────────────────────────────────
+linger:
+  genome: "hg38"
+  method: "scNN"    # "scNN" or "pseudo-bulk"
+
+# ── cisFormer ──────────────────────────────────────────────────────────────────
+cisformer:
+  genome: "hg38"
+  batch_size: 64
+  seq_len: 1344
+
+# ── SCARlink ───────────────────────────────────────────────────────────────────
+scarlink:
+  genome: "hg38"
+  n_neighbors: 30
+  n_components: 30
+
+# ── Shared QC thresholds (applied identically to ALL methods) ─────────────────
+qc:
+  min_features_atac: 200
+  max_features_atac: 100000
+  min_tss_enrichment: 1.0
+  max_nucleosome_signal: 4.0
+  min_features_rna: 200
+  max_features_rna: 10000
+  max_pct_mt: 20
+  min_cells_per_gene: 10          # gene must be expressed in >= this many cells
+
+# ── Evaluation ────────────────────────────────────────────────────────────────
+evaluation:
+  min_expr_frac: 0.05              # keep genes expressed in >= this fraction of cells
+  n_hvg: 3000                      # top N HVG from RNA for PCC evaluation
+  n_top_deg: 500                   # top N DEG per cell type for PCC evaluation
+  cell_type_csv: ""                # path to CSV with barcode + cell-type column (leave empty to skip DEG/clustering)
+  cell_type_col: "cell_type"       # column name in cell_type_csv
+
+# ── Clustering benchmark ───────────────────────────────────────────────────────
+clustering:
+  resolutions: [0.1, 0.2, 0.3, 0.5, 0.8, 1.0, 1.5]
+  n_pcs: 30
+
+# ── Resources ─────────────────────────────────────────────────────────────────
+resources:
+  n_cores: 8
+  mem_gb: 64
+
+# ── Output directory (relative to smk-benchmark/) ─────────────────────────────
+outdir: "results"
