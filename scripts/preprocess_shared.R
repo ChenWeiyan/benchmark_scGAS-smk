@@ -10,6 +10,49 @@ suppressPackageStartupMessages({
   library(Matrix)
 })
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+.load_annotation <- function(genome) {
+  pkg_map <- c(
+    hg19 = "EnsDb.Hsapiens.v75",
+    hg38 = "EnsDb.Hsapiens.v86"
+  )
+  pkg <- pkg_map[[genome]]
+  if (is.null(pkg)) stop("[preprocess] No EnsDb mapped for genome: ", genome)
+  if (!requireNamespace(pkg, quietly = TRUE))
+    stop("[preprocess] Install: BiocManager::install('", pkg, "')")
+  ann <- Signac::GetGRangesFromEnsDb(
+    ensdb   = get(pkg, envir = asNamespace(pkg)),
+    verbose = FALSE
+  )
+  # Offline rename to UCSC style ("1" -> "chr1", "MT" -> "chrM").
+  # seqlevelsStyle<- downloads chromInfo from UCSC, which fails on cert
+  # mismatch and on offline compute nodes.
+  ann <- GenomeInfoDb::keepStandardChromosomes(ann, pruning.mode = "coarse")
+  lv  <- sub("^chr", "", GenomeInfoDb::seqlevels(ann))
+  lv  <- paste0("chr", ifelse(lv == "MT", "M", lv))
+  GenomeInfoDb::seqlevels(ann) <- lv
+  GenomeInfoDb::genome(ann)    <- genome
+  ann
+}
+
+.read_fragment_barcodes <- function(frag_path, n_lines = 5e5) {
+  con <- if (grepl("\\.gz$", frag_path)) gzcon(file(frag_path, "rb")) else file(frag_path, "r")
+  on.exit(close(con))
+  bcs <- character(0)
+  repeat {
+    lines <- readLines(con, n = 10000L, warn = FALSE)
+    if (length(lines) == 0) break
+    data_lines <- lines[!startsWith(lines, "#")]
+    if (length(data_lines)) {
+      fields <- do.call(rbind, strsplit(data_lines, "\t"))
+      bcs    <- union(bcs, fields[, 4])
+    }
+    if (length(bcs) >= n_lines) break
+  }
+  bcs
+}
+
 fragment_path <- snakemake@input[["fragment"]]
 rna_path      <- snakemake@input[["rna"]]
 genome        <- snakemake@params[["genome"]]
@@ -33,10 +76,11 @@ message("[preprocess] RNA: ", nrow(rna_counts), " genes x ", ncol(rna_counts), "
 mt_pattern   <- "^MT-"
 mt_genes     <- grep(mt_pattern, rownames(rna_counts), value = TRUE, ignore.case = TRUE)
 lib_sz_rna   <- Matrix::colSums(rna_counts)
-pct_mt       <- if (length(mt_genes) > 0)
+pct_mt <- if (length(mt_genes) > 0) {
   Matrix::colSums(rna_counts[mt_genes, ]) / lib_sz_rna * 100
-else
+} else {
   setNames(rep(0, ncol(rna_counts)), colnames(rna_counts))
+}
 n_feat_rna   <- Matrix::colSums(rna_counts > 0)
 
 # ── Load gene annotation ──────────────────────────────────────────────────────
@@ -115,41 +159,3 @@ rna_lognorm <- log1p(Matrix::t(Matrix::t(rna_filt) / lib_sz) * 1e4)
 saveRDS(rna_lognorm, snakemake@output[["rna_lognorm"]])
 
 message("[preprocess] Done.")
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-.load_annotation <- function(genome) {
-  pkg_map <- c(
-    hg19 = "EnsDb.Hsapiens.v75",
-    hg38 = "EnsDb.Hsapiens.v86"
-  )
-  pkg <- pkg_map[[genome]]
-  if (is.null(pkg)) stop("[preprocess] No EnsDb mapped for genome: ", genome)
-  if (!requireNamespace(pkg, quietly = TRUE))
-    stop("[preprocess] Install: BiocManager::install('", pkg, "')")
-  ann <- Signac::GetGRangesFromEnsDb(
-    ensdb   = get(pkg, envir = asNamespace(pkg)),
-    verbose = FALSE
-  )
-  GenomeInfoDb::seqlevelsStyle(ann) <- "UCSC"
-  GenomeInfoDb::genome(ann)         <- genome
-  ann
-}
-
-.read_fragment_barcodes <- function(frag_path, n_lines = 5e5) {
-  con <- if (grepl("\\.gz$", frag_path)) gzcon(file(frag_path, "rb")) else file(frag_path, "r")
-  on.exit(close(con))
-  bcs <- character(0)
-  repeat {
-    lines <- readLines(con, n = 10000L, warn = FALSE)
-    if (length(lines) == 0) break
-    data_lines <- lines[!startsWith(lines, "#")]
-    if (length(data_lines)) {
-      fields <- do.call(rbind, strsplit(data_lines, "\t"))
-      bcs    <- union(bcs, fields[, 4])
-    }
-    if (length(bcs) >= n_lines) break
-  }
-  bcs
-}

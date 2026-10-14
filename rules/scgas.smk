@@ -28,7 +28,9 @@ if "scgas" in METHODS:
             cfg        = config["scgas"],
             n_cores    = config["resources"]["n_cores"],
             chunk_size = config["scgas"]["chunk_size"],
-            pkg_dir    = "../scGAS-R",   # path to local scGAS-R package (relative to smk-benchmark/)
+            # scGAS-R checkout used only if scGAS is not installed in the env;
+            # relative to benchmark_scGAS-smk/ (snakemake working dir) or absolute
+            pkg_dir    = config["scgas"].get("pkg_dir", "../scGAS-R"),
         threads: config["resources"]["n_cores"]
         log:    f"{OUTDIR}/logs/scgas.log"
         conda:  "../envs/r_benchmark.yaml"

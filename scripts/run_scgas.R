@@ -15,9 +15,16 @@ pkg_dir    <- snakemake@params[["pkg_dir"]]
 out_path      <- snakemake@output[["activity"]]
 dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
 
-# Load scGAS (from local package if not installed)
+# Load scGAS (from local checkout if not installed in the env)
 if (!requireNamespace("scGAS", quietly = TRUE)) {
-  message("[scgas] Loading from local package: ", pkg_dir)
+  pkg_dir <- normalizePath(pkg_dir, mustWork = FALSE)
+  if (!file.exists(file.path(pkg_dir, "DESCRIPTION"))) {
+    stop("[scgas] scGAS is not installed and no package DESCRIPTION was found at: ",
+         pkg_dir, "\n  Either install scGAS into the activated r_benchmark env:\n",
+         "    Rscript -e 'devtools::install(\"/path/to/scGAS-R\")'\n",
+         "  or set `scgas.pkg_dir` in config.yaml to the scGAS-R checkout.")
+  }
+  message("[scgas] scGAS not installed; loading from local checkout: ", pkg_dir)
   devtools::load_all(pkg_dir, quiet = TRUE)
 } else {
   library(scGAS)

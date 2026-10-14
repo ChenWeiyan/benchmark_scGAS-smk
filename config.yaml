@@ -34,6 +34,9 @@ scgas:
   knn_k: 30
   seed_fraction: 0.10
   chunk_size: 500                # genes processed per batched matrix multiply (memory vs speed trade-off)
+  # Path to the scGAS-R checkout, relative to benchmark_scGAS-smk/ (where snakemake is run) or absolute.
+  # Only used if scGAS is not installed in the r_benchmark env.
+  pkg_dir: "../scGAS-R"
 
 # ── Signac GeneActivity ────────────────────────────────────────────────────────
 signac:

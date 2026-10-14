@@ -32,9 +32,13 @@ if (!requireNamespace(pkg, quietly = TRUE))
 genes_gr <- genes(get(pkg, envir = asNamespace(pkg)),
                   filter  = ~ gene_biotype == "protein_coding",
                   columns = c("gene_id", "gene_name"))
-seqlevelsStyle(genes_gr) <- "UCSC"
-genome(genes_gr)          <- genome
-genes_gr <- keepStandardChromosomes(genes_gr, pruning.mode = "coarse")
+# Offline rename to UCSC style ("1" -> "chr1", "MT" -> "chrM"); seqlevelsStyle<-
+# downloads chromInfo from UCSC and fails on cert mismatch / offline nodes.
+genes_gr <- GenomeInfoDb::keepStandardChromosomes(genes_gr, pruning.mode = "coarse")
+lv <- sub("^chr", "", GenomeInfoDb::seqlevels(genes_gr))
+lv <- paste0("chr", ifelse(lv == "MT", "M", lv))
+GenomeInfoDb::seqlevels(genes_gr) <- lv
+GenomeInfoDb::genome(genes_gr)    <- genome
 
 message("[signac] Genes: ", length(genes_gr))
 

@@ -6,15 +6,17 @@ channels:
 dependencies:
   - r-base=4.3
   - r-seurat=5.0
-  - bioconductor-signac=1.12
+  - r-signac>=1.13.0               # CRAN package; 1.12 TSSEnrichment() breaks on SeuratObject v5
   - bioconductor-genomicranges
   - bioconductor-genomeinfodb
   - bioconductor-rtracklayer
   - bioconductor-ensdb.hsapiens.v75
   - bioconductor-ensdb.hsapiens.v86
   - bioconductor-rsamtools
-  - bioconductor-scavenge
+  - r-scavenge=1.0.2               # not a Bioconductor package
   - bioconductor-matrixgenerics
+  - bioconductor-biovizbase        # Signac TSS functions
+  - r-hdf5r                        # Seurat::Read10X_h5
   - r-matrix
   - r-data.table
   - r-ggplot2

@@ -32,7 +32,13 @@ pkg_map <- c(hg19 = "EnsDb.Hsapiens.v75", hg38 = "EnsDb.Hsapiens.v86")
 ann <- {
   pkg <- pkg_map[[genome]]
   a   <- Signac::GetGRangesFromEnsDb(ensdb = get(pkg, envir = asNamespace(pkg)), verbose = FALSE)
-  GenomeInfoDb::seqlevelsStyle(a) <- "UCSC"
+  # Offline rename to UCSC style ("1" -> "chr1", "MT" -> "chrM"); seqlevelsStyle<-
+  # downloads chromInfo from UCSC and fails on cert mismatch / offline nodes.
+  a  <- GenomeInfoDb::keepStandardChromosomes(a, pruning.mode = "coarse")
+  lv <- sub("^chr", "", GenomeInfoDb::seqlevels(a))
+  lv <- paste0("chr", ifelse(lv == "MT", "M", lv))
+  GenomeInfoDb::seqlevels(a) <- lv
+  GenomeInfoDb::genome(a)    <- genome
   a
 }
 
