@@ -22,6 +22,10 @@ methods:
   # - scarlink
 
 # ── scGAS reference ────────────────────────────────────────────────────────────
+# scGAS keeps its intermediate results (Seurat objects incl. ATAC LSI/UMAP,
+# metacells, per-gene models, scGAS UMAP) in <outdir>/methods/scgas/scgas_run/
+# and resumes from them on re-run. It does NOT detect changed inputs: delete
+# that folder after changing the input data, qc thresholds or scgas parameters.
 scgas:
   ref_dir: "../data/scgas_ref"                      # directory with hg19 reference files
   ref_genome: "hg19"                                # scGAS reference genome

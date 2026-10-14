@@ -37,6 +37,13 @@ message("[scgas] Cells: ", length(shared_bc))
 
 lsi_dims <- seq(cfg$lsi_dims_start, cfg$lsi_dims_end)
 
+# Intermediate results (Seurat objects + scGAS checkpoints) are kept in
+# <outdir>/methods/scgas/scgas_run/. scGAS resumes from these checkpoints if
+# they exist WITHOUT checking whether inputs or parameters changed: delete that
+# folder after changing QC thresholds, input data or scgas parameters.
+run_name <- "scgas_run"
+message("[scgas] Intermediate results: ", file.path(dirname(out_path), run_name))
+
 # ── Step 1: Preprocess ────────────────────────────────────────────────────────
 message("[scgas] Step 1: Preprocess")
 obj <- scgas_preprocess(
@@ -47,7 +54,10 @@ obj <- scgas_preprocess(
   cell_barcodes  = shared_bc,
   lsi_dims       = lsi_dims,
   n_cores        = n_cores,
-  verbose        = TRUE
+  verbose        = TRUE,
+  out_dir        = dirname(out_path),   # inherited by all later steps via obj@misc
+  run_name       = run_name,
+  save_obj       = TRUE                 # -> seurat_preprocessed.rds
 )
 
 # ── Step 2: Metacells ─────────────────────────────────────────────────────────
@@ -57,12 +67,14 @@ obj <- scgas_metacell(
   gamma    = cfg$gamma,
   min_size = cfg$min_size,
   max_size = cfg$max_size,
-  n_cores  = n_cores
+  n_cores  = n_cores,
+  save_obj = TRUE                       # -> seurat_metacell.rds
 )
 
 # ── Step 3: Train models ──────────────────────────────────────────────────────
 message("[scgas] Step 3: Train Lasso models")
-obj <- scgas_train_models(obj, n_cores = n_cores)
+obj <- scgas_train_models(obj, n_cores = n_cores,
+                          save_obj = TRUE)   # -> seurat_models_trained.rds
 
 # ── Step 4: Compute scGAS ─────────────────────────────────────────────────────
 message("[scgas] Step 4: Compute single-cell GAS")
@@ -72,7 +84,8 @@ obj <- scgas_compute(
   knn_k             = cfg$knn_k,
   seed_fraction     = cfg$seed_fraction,
   chunk_size        = chunk_size,
-  run_dim_reduction = FALSE
+  run_dim_reduction = TRUE,             # scgaspca / scgasumap in the saved object
+  save_obj          = TRUE              # -> seurat_scgas_computed.rds
 )
 
 # ── Extract and save ──────────────────────────────────────────────────────────

@@ -13,6 +13,12 @@
 #      (If scGAS is not installed, run_scgas.R falls back to devtools::load_all()
 #       on `scgas.pkg_dir` in config.yaml, default ../scGAS-R.)
 #
+# scGAS intermediates (Seurat objects, metacells, per-gene models) are kept in
+#   <outdir>/methods/scgas/scgas_run/   e.g. results/methods/scgas/scgas_run/
+# and reused on re-run (resume after interruption). They are NOT invalidated
+# automatically: delete that folder after changing input data, qc thresholds or
+# scgas parameters in config.yaml.
+#
 # Usage (from benchmark_scGAS-smk/):
 #   bash run_benchmark.sh           # 8 cores
 #   bash run_benchmark.sh 16        # 16 cores
