@@ -22,10 +22,14 @@ dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
 dir.create(archr_dir, showWarnings = FALSE, recursive = TRUE)
 
 barcodes <- readLines(barcodes_path)
+
 addArchRGenome(genome)
 addArchRThreads(threads = n_cores)
 
 # ── Create Arrow file ─────────────────────────────────────────────────────────
+old_dir=getwd()
+setwd(archr_dir)
+
 arrow_files <- createArrowFiles(
   inputFiles     = fragment_path,
   sampleNames    = "sample",
@@ -34,19 +38,40 @@ arrow_files <- createArrowFiles(
   minFrags       = 0,
   addTileMat     = TRUE,
   addGeneScoreMat= TRUE,
-  force          = TRUE,
-  outputDirectory= archr_dir
+  force          = TRUE
+  #outputDirectory= archr_dir #Error: unused argument
 )
 
 # ── Create ArchR project ──────────────────────────────────────────────────────
-proj <- ArchRProject(ArrowFiles = arrow_files, outputDirectory = archr_dir, copyArrows = FALSE)
-proj <- proj[barcodes[barcodes %in% getCellNames(proj)], ]
+proj <- ArchRProject(ArrowFiles = arrow_files,
+# outputDirectory = archr_dir, 
+copyArrows = FALSE)
+
+archr_cells <- getCellNames(proj)
+
+message("First ArchR cell names:")
+print(head(archr_cells))
+
+message("First input barcodes:")
+print(head(barcodes))
+
+archr_cells_clean <- sub("^sample#", "", archr_cells) #Remove sample prefix
+
+matched_barcodes <- intersect(barcodes, archr_cells_clean) #Find matching barcodes
+
+matched_archr_cells <- archr_cells[
+  archr_cells_clean %in% matched_barcodes
+]
+
+proj <- proj[matched_archr_cells, ]
 
 # ── Extract GeneScoreMatrix ───────────────────────────────────────────────────
-message("[archr] Extracting GeneScoreMatrix ...")
 gs_se <- getMatrixFromProject(proj, useMatrix = "GeneScoreMatrix")
 gs_mat <- assay(gs_se, "GeneScoreMatrix")
 rownames(gs_mat) <- rowData(gs_se)$name
+colnames(gs_mat) <- sub("^sample#","",colnames(gs_mat))
+
+setwd(old_dir)
 
 saveRDS(gs_mat, out_path)
-message("[archr] Saved raw gene score matrix: ", out_path)
+
